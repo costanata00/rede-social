@@ -34,3 +34,20 @@ export function requireOwnPost(prisma: PrismaClient) {
     next();
   };
 }
+
+export function requireOwnComment(prisma: PrismaClient) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const commentId = Number(req.params.id);
+    const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+
+    if (!comment) {
+      res.status(404).render('error', { status: 404, message: 'Comentário não encontrado' });
+      return;
+    }
+    if (comment.authorId !== req.session.userId) {
+      res.status(403).render('error', { status: 403, message: 'Você não pode apagar um comentário de outra pessoa' });
+      return;
+    }
+    next();
+  };
+}

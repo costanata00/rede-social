@@ -45,16 +45,25 @@ export class PostController {
     });
   }
 
-  async get(id: number) {
+  async get(id: number, currentUserId?: number) {
     const post = await this.prisma.post.findUnique({
       where: { id },
-      include: { author: true, tags: true },
+      include: {
+        author: true,
+        tags: true,
+        comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
+        _count: { select: { likes: true, comments: true } },
+        ...(currentUserId
+          ? { likes: { where: { userId: currentUserId }, select: { userId: true } } }
+          : {}),
+      },
     });
     if (!post) {
       throw new PostNotFoundError(id);
     }
-    return post;
-  }
+    const { likes, ...rest } = post as typeof post & { likes?: { userId: number }[] };
+    return { ...rest, likedByMe: (likes?.length ?? 0) > 0 };
+   }
 
   async listByTag(name: string) {
     const tag = await this.prisma.tag.findUnique({

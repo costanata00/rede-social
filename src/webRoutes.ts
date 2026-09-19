@@ -3,11 +3,15 @@ import type { PrismaClient } from '@prisma/client';
 import { AuthController } from './auth/AuthController.js';
 import { UserController } from './users/UserController.js';
 import { PostController } from './posts/PostController.js';
-import { requireAuth, requireOwnPost } from './auth/middleware.js';
 import { upload } from './uploads/upload.js';
 import type { ImageStorage } from './uploads/storage.js';
 import { asyncHandler } from './shared/http.js';
 import { DuplicateEmailError, InvalidCredentialsError, ValidationError } from './shared/errors.js';
+import { LikeController } from './likes/LikeController.js';
+import { CommentController } from './comments/CommentController.js';
+import { requireAuth, requireOwnPost, requireOwnComment } from './auth/middleware.js';
+
+
 
 // Rotas que servem HTML (EJS) e dependem de sessão — diferente de
 // routes.ts, que é só a API JSON de leitura. `requireAuth` (autenticação)
@@ -17,6 +21,75 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
   const authController = new AuthController(prisma);
   const userController = new UserController(prisma);
   const postController = new PostController(prisma);
+  const likeController = new LikeController(prisma);
+  const commentController = new CommentController(prisma);
+
+  //1. Curtidas em posts
+  router.post(
+    '/posts/:id/like',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const result = await likeController.toggle(req.session.userId!, Number(req.params.id));
+      res.json(result);
+    }),
+  );
+  //2. Comentarios em posts
+  // Página de um post — o link do conteúdo e do ícone de comentários no
+  router.get(
+    '/posts/:id',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const currentUserId = req.session.userId!;
+      const postId = Number(req.params.id);
+      const [currentUser, post] = await Promise.all([
+        userController.get(currentUserId),
+        postController.get(postId, currentUserId),
+      ]);
+      res.render('post', { currentUser, post, error: null });
+    }),
+  );
+
+  router.post(
+    '/posts/:id/comments',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const currentUserId = req.session.userId!;
+      const postId = Number(req.params.id);
+      try {
+        await commentController.create(currentUserId, postId, req.body);
+        res.redirect(`/posts/${postId}`);
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          const [currentUser, post] = await Promise.all([
+            userController.get(currentUserId),
+            postController.get(postId, currentUserId),
+          ]);
+          res.status(400).render('post', { currentUser, post, error: err.message });
+          return;
+        }
+        throw err;
+      }
+    }),
+  );
+
+  router.post(
+    '/posts/:postId/comments/:commentId/delete',
+    requireAuth,
+    requireOwnComment(prisma),
+    asyncHandler(async (req, res) => {
+      await commentController.remove(Number(req.params.commentId));
+      res.redirect(`/posts/${req.params.postId}`);
+    }),
+  );
+
+
+
+  //teste
+
+
+
+
+
 
   router.get('/register', (req, res) => {
     res.render('register', { error: null });
@@ -60,7 +133,7 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
         // É isso que "loga" o usuário: guardar o id na sessão. A partir
         // daqui, toda requisição desse navegador vai carregar
         // `req.session.userId` (via cookie) até o logout ou o cookie expirar.
-        req.session.userId = user.id; 
+        req.session.userId = user.id;
         // req.session.user = user; // Ensure the `user` type matches the extended session type
         res.redirect('/');
       } catch (err) {

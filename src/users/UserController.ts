@@ -58,18 +58,28 @@ export class UserController {
   // Feed = posts de quem eu sigo. Mostra um filtro relacional aninhado:
   // "posts cujo autor tem, entre seus seguidores, um Follow onde eu sou o
   // follower" — sem precisar buscar a lista de ids manualmente antes.
+
   async feed(userId: number) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new UserNotFoundError(userId);
     }
-
-    return this.prisma.post.findMany({
+    const posts = await this.prisma.post.findMany({
       where: { author: { followers: { some: { followerId: userId } } } },
-      include: { author: true, tags: true },
+      include: {
+        author: true,
+        tags: true,
+        // incluir likes e comentários
+        _count: { select: { likes: true, comments: true } },
+        likes: { where: { userId }, select: { userId: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
+    return posts.map(({ likes, ...post }) => ({ ...post, likedByMe: likes.length > 0 }));
   }
+
+
+
 
   // Lista para a tela inicial sugerir quem seguir: todo mundo, exceto eu
   // mesmo, marcando quem eu já sigo (`isFollowing`) para a view decidir

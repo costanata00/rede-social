@@ -93,6 +93,11 @@
                 <p class="text-xs text-slate-400"><%= new Date(comment.createdAt).toLocaleString('pt-BR') %></p>
               </div>
               <p class="text-sm text-slate-700 mt-1"><%= comment.content %></p>
+              <% if (comment.authorId === currentUser.id) { %>
+                <form method="post" action="/posts/<%= post.id %>/comments/<%= comment.id %>/delete" class="mt-1">
+                  <button type="submit" class="text-xs text-red-600 hover:underline">Apagar</button>
+                </form>
+              <% } %>
             </div>
           <% }) %>
         </div>
