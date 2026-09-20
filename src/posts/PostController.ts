@@ -12,7 +12,7 @@ export class PostController {
   // 1:N (author) + N:N (tags) na mesma escrita: `connect` liga o post a um
   // autor existente, `connectOrCreate` reaproveita tags já cadastradas ou
   // cria as que ainda não existem — tudo em uma única operação do Prisma.
-  async create(authorId: number, body: unknown, imageUrl?: string) {
+  async create(authorId: number, body: unknown, imageUrls: string[] = []) {
     const { content, tags } = (body ?? {}) as { content?: unknown; tags?: unknown };
 
     if (typeof content !== 'string' || content.trim().length === 0) {
@@ -32,7 +32,6 @@ export class PostController {
     return this.prisma.post.create({
       data: {
         content,
-        imageUrl,
         author: { connect: { id: authorId } },
         tags: {
           connectOrCreate: tagNames.map((name) => ({
@@ -40,8 +39,11 @@ export class PostController {
             create: { name },
           })),
         },
+        images: {
+          create: imageUrls.map((url, order) => ({ url, order })),
+        },
       },
-      include: { author: true, tags: true },
+      include: { author: true, tags: true, images: { orderBy: { order: 'asc' } } },
     });
   }
 
@@ -51,7 +53,7 @@ export class PostController {
       include: {
         author: true,
         tags: true,
-
+        images: { orderBy: { order: 'asc' } },
         comments: {
           include: {
             author: true,

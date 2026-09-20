@@ -6,7 +6,7 @@ import { DuplicateFollowError, SelfFollowError, UserNotFoundError, ValidationErr
 // (precisa de senha/hash) — não existe mais um "criar usuário sem senha"
 // aqui, de propósito.
 export class UserController {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient) { }
 
   async get(id: number) {
     const user = await this.prisma.user.findUnique({
@@ -65,10 +65,11 @@ export class UserController {
       throw new UserNotFoundError(userId);
     }
     const posts = await this.prisma.post.findMany({
-      where: { author: { followers: { some: { followerId: userId } } } },
+      where: { OR: [{ author: { followers: { some: { followerId: userId } } } }, { authorId: userId },], },
       include: {
         author: true,
         tags: true,
+        images: { orderBy: { order: 'asc' } },
         // incluir likes e comentários
         _count: { select: { likes: true, comments: true } },
         likes: { where: { userId }, select: { userId: true } },

@@ -24,78 +24,7 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
   const likeController = new LikeController(prisma);
   const commentController = new CommentController(prisma);
 
-  //1. Curtidas em posts
-  router.post(
-    '/posts/:id/like',
-    requireAuth,
-    asyncHandler(async (req, res) => {
-      const result = await likeController.toggle(req.session.userId!, Number(req.params.id));
-      res.json(result);
-    }),
-  );
-  //2. Comentarios em posts
-  // Página de um post — o link do conteúdo e do ícone de comentários no
-  router.get(
-    '/posts/:id',
-    requireAuth,
-    asyncHandler(async (req, res) => {
-      const currentUserId = req.session.userId!;
-      const postId = Number(req.params.id);
-      const [currentUser, post] = await Promise.all([
-        userController.get(currentUserId),
-        postController.get(postId, currentUserId),
-      ]);
-      res.render('post', { currentUser, post, error: null });
-    }),
-  );
-
-  router.post(
-    '/posts/:id/comments',
-    requireAuth,
-    asyncHandler(async (req, res) => {
-      const currentUserId = req.session.userId!;
-      const postId = Number(req.params.id);
-      try {
-        await commentController.create(currentUserId, postId, req.body);
-        res.redirect(`/posts/${postId}`);
-      } catch (err) {
-        if (err instanceof ValidationError) {
-          const [currentUser, post] = await Promise.all([
-            userController.get(currentUserId),
-            postController.get(postId, currentUserId),
-          ]);
-          res.status(400).render('post', { currentUser, post, error: err.message });
-          return;
-        }
-        throw err;
-      }
-    }),
-  );
-
-  router.post(
-    '/posts/:postId/comments/:commentId/delete',
-    requireAuth,
-    requireOwnComment(prisma),
-    asyncHandler(async (req, res) => {
-      await commentController.remove(Number(req.params.commentId));
-      res.redirect(`/posts/${req.params.postId}`);
-    }),
-  );
-
-  //3
-  router.post(
-    '/posts/:postId/comments/:commentId/like',
-    requireAuth,
-    asyncHandler(async (req, res) => {
-      const result = await commentController.toggleLike(req.session.userId!, Number(req.params.commentId));
-      res.json(result);
-    }),
-  );
-
-
-  //teste
-
-
+  
 
 
 
@@ -182,20 +111,17 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
   router.post(
     '/posts',
     requireAuth, // middlware
-    upload.single('image'), // middleware
+    upload.array('images'),
     asyncHandler(async (req, res) => {
       try {
-        let imageUrl: string | undefined;
-        // o parse do arquivo fica disponivel em req.file
-        if (req.file) {
-          console.log({ file: req.file })
-          imageUrl = await imageStorage.upload(req.file);
-        }
+        const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+        const imageUrls = await Promise.all(files.map((file) => imageStorage.upload(file)));
+
         const tags = typeof req.body.tags === 'string'
           ? req.body.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
           : undefined;
 
-        await postController.create(req.session.userId!, { content: req.body.content, tags }, imageUrl);
+        await postController.create(req.session.userId!, { content: req.body.content, tags }, imageUrls);
         res.redirect('/');
       } catch (err) {
         if (err instanceof ValidationError) {
@@ -225,6 +151,75 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
       res.redirect('/');
     }),
   );
+
+  //1. Curtidas em posts
+  router.post(
+    '/posts/:id/like',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const result = await likeController.toggle(req.session.userId!, Number(req.params.id));
+      res.json(result);
+    }),
+  );
+  //2. Comentarios em posts
+  // Página de um post — o link do conteúdo e do ícone de comentários no
+  router.get(
+    '/posts/:id',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const currentUserId = req.session.userId!;
+      const postId = Number(req.params.id);
+      const [currentUser, post] = await Promise.all([
+        userController.get(currentUserId),
+        postController.get(postId, currentUserId),
+      ]);
+      res.render('post', { currentUser, post, error: null });
+    }),
+  );
+
+  router.post(
+    '/posts/:id/comments',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const currentUserId = req.session.userId!;
+      const postId = Number(req.params.id);
+      try {
+        await commentController.create(currentUserId, postId, req.body);
+        res.redirect(`/posts/${postId}`);
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          const [currentUser, post] = await Promise.all([
+            userController.get(currentUserId),
+            postController.get(postId, currentUserId),
+          ]);
+          res.status(400).render('post', { currentUser, post, error: err.message });
+          return;
+        }
+        throw err;
+      }
+    }),
+  );
+
+  router.post(
+    '/posts/:postId/comments/:commentId/delete',
+    requireAuth,
+    requireOwnComment(prisma),
+    asyncHandler(async (req, res) => {
+      await commentController.remove(Number(req.params.commentId));
+      res.redirect(`/posts/${req.params.postId}`);
+    }),
+  );
+
+  //3
+  router.post(
+    '/posts/:postId/comments/:commentId/like',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const result = await commentController.toggleLike(req.session.userId!, Number(req.params.commentId));
+      res.json(result);
+    }),
+  );
+
 
   return router;
 }

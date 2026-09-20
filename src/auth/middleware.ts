@@ -37,7 +37,7 @@ export function requireOwnPost(prisma: PrismaClient) {
 
 export function requireOwnComment(prisma: PrismaClient) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const commentId = Number(req.params.id);
+    const commentId = Number(req.params.commentId);
     const comment = await prisma.comment.findUnique({ where: { id: commentId } });
 
     if (!comment) {
