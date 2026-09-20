@@ -7,6 +7,7 @@ import {
   SelfFollowError,
   TagNotFoundError,
   UserNotFoundError,
+  CommentNotFoundError,
   ValidationError,
 } from './errors.js';
 
@@ -17,6 +18,7 @@ const STATUS_BY_ERROR = new Map<Function, number>([
   [UserNotFoundError, 404],
   [PostNotFoundError, 404],
   [TagNotFoundError, 404],
+  [CommentNotFoundError, 404],
   [DuplicateFollowError, 409],
   [DuplicateEmailError, 409],
 ]);

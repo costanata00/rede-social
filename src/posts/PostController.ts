@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import { PostNotFoundError, TagNotFoundError, UserNotFoundError, ValidationError } from '../shared/errors.js';
 
 export class PostController {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient) { }
 
   // `authorId` vem da SESSÃO (ver src/webRoutes.ts), nunca do corpo da
   // requisição: é a autorização "você só pode postar como você mesmo" em
@@ -51,7 +51,18 @@ export class PostController {
       include: {
         author: true,
         tags: true,
-        comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
+
+        comments: {
+          include: {
+            author: true,
+            _count: { select: { likes: true } },
+            ...(currentUserId
+              ? { likes: { where: { userId: currentUserId }, select: { userId: true } } }
+              : {}),
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+
         _count: { select: { likes: true, comments: true } },
         ...(currentUserId
           ? { likes: { where: { userId: currentUserId }, select: { userId: true } } }
@@ -62,8 +73,12 @@ export class PostController {
       throw new PostNotFoundError(id);
     }
     const { likes, ...rest } = post as typeof post & { likes?: { userId: number }[] };
-    return { ...rest, likedByMe: (likes?.length ?? 0) > 0 };
-   }
+    const comments = rest.comments.map((comment: any) => {
+      const { likes: commentLikes, ...commentRest } = comment;
+      return { ...commentRest, likedByMe: (commentLikes?.length ?? 0) > 0 };
+    });
+    return { ...rest, comments, likedByMe: (likes?.length ?? 0) > 0 };
+  }
 
   async listByTag(name: string) {
     const tag = await this.prisma.tag.findUnique({

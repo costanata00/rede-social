@@ -82,6 +82,15 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
     }),
   );
 
+  //3
+  router.post(
+    '/posts/:postId/comments/:commentId/like',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const result = await commentController.toggleLike(req.session.userId!, Number(req.params.commentId));
+      res.json(result);
+    }),
+  );
 
 
   //teste

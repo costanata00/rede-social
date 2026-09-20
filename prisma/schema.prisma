@@ -28,6 +28,7 @@ model User {
 
   likes Like[]
   comments Comment[]
+  commentLikes CommentLike[]
 
 }
 
@@ -47,7 +48,10 @@ model Post {
   content   String
   // URL pública do arquivo no S3 (ou no storage local, em dev) — o binário
   // da imagem nunca é salvo no banco, só o endereço dele. Ver src/uploads/.
-  imageUrl  String?
+  // imageUrl  String?
+
+  images PostImage[]
+
   createdAt DateTime @default(now())
 
   authorId Int
@@ -85,5 +89,25 @@ model Comment {
   authorId Int
   postId   Int
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  likes CommentLike[]
+}
+
+model CommentLike {
+  userId    Int
+  commentId Int
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+}
+
+model PostImage {
+  id    Int @id @default(autoincrement())
+  url   String
+  order Int @default(0)
+  postId Int
   post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 }

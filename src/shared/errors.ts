@@ -41,3 +41,9 @@ export class InvalidCredentialsError extends Error {
     super('E-mail ou senha inválidos');
   }
 }
+
+export class CommentNotFoundError extends Error {
+  constructor(id: number) {
+    super(`Comentário ${id} não encontrado`);
+  }
+}
