@@ -38,14 +38,14 @@
     <section class="md:col-span-2 flex flex-col gap-4">
       <h2 class="text-slate-500 text-sm font-medium uppercase tracking-wide">Seu feed</h2>
 
-      <% if (feed.length===0) { %>
-        <p class="bg-white rounded-lg shadow p-6 text-sm text-slate-500">
+      <% if (feed.posts.length === 0) { %>
+        <p id="feed-empty" class="bg-white rounded-lg shadow p-6 text-sm text-slate-500">
           Ninguém que você segue postou ainda. Siga alguém na coluna ao lado.
         </p>
         <% } %>
 
-          <% feed.forEach((post)=> { %>
-            <%# ATIVIDADE: enquanto o backend não devolver esses dados, o feed mostra 0/0 %>
+          <div id="feed-posts" class="flex flex-col gap-4" data-current-user-id="<%= currentUser.id %>">
+            <% feed.posts.forEach((post)=> { %>
               <% const likeCount=post._count?.likes ?? 0; %>
                 <% const commentCount=post._count?.comments ?? 0; %>
                   <% const likedByMe=post.likedByMe ?? false; %>
@@ -67,83 +67,83 @@
                           <img src="<%= post.images[0].url %>" alt=""
                             class="mt-3 rounded-lg max-h-80 w-full object-cover" />
                           <% } %>
-
-
                       </a>
+
                       <% if (post.images.length> 1) { %>
-                        <%# Carrossel fica FORA do <a> de propósito: setas e pontos são
-                          <button>, e um clique neles dentro do <a> ainda borbulharia
-                              e navegaria pro post — assim evita precisar de
-                              preventDefault/stopPropagation espalhado pelo JS. %>
-                              <div class="carousel relative mt-3 rounded-lg overflow-hidden" data-carousel
-                                data-index="0">
-                                <div class="carousel-track flex" style="transform: translateX(0%);">
-                                  <% post.images.forEach((image)=> { %>
-                                    <img src="<%= image.url %>" alt=""
-                                      class="w-full flex-shrink-0 max-h-80 object-cover" />
-                                    <% }) %>
-                                </div>
-                                <button type="button" data-carousel-prev aria-label="Foto anterior"
-                                  class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm">
-                                  ‹
+                        <div class="carousel relative mt-3 rounded-lg overflow-hidden" data-carousel data-index="0">
+                          <div class="carousel-track flex" style="transform: translateX(0%);">
+                            <% post.images.forEach((image)=> { %>
+                              <img src="<%= image.url %>" alt=""
+                                class="w-full flex-shrink-0 max-h-80 object-cover" />
+                              <% }) %>
+                          </div>
+                          <button type="button" data-carousel-prev aria-label="Foto anterior"
+                            class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm">
+                            ‹
+                          </button>
+                          <button type="button" data-carousel-next aria-label="Próxima foto"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm">
+                            ›
+                          </button>
+                          <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                            <% post.images.forEach((_, i)=> { %>
+                              <button type="button" data-carousel-dot="<%= i %>"
+                                aria-label="Ir para foto <%= i + 1 %>"
+                                class="w-1.5 h-1.5 rounded-full <%= i === 0 ? 'bg-white' : 'bg-white/50' %>"></button>
+                              <% }) %>
+                          </div>
+                        </div>
+                        <% } %>
+
+                          <% if (post.tags.length> 0) { %>
+                            <div class="flex gap-2 mt-3 flex-wrap">
+                              <% post.tags.forEach((tag)=> { %>
+                                <span class="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5">#<%=
+                                    tag.name %>
+                                </span>
+                                <% }) %>
+                            </div>
+                            <% } %>
+
+                              <footer class="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
+                                <button type="button" data-like-button data-post-id="<%= post.id %>"
+                                  data-liked="<%= likedByMe %>" title="Curtir"
+                                  class="like-button flex items-center gap-1.5 text-sm <%= likedByMe ? 'text-rose-600' : 'text-slate-500' %> hover:text-rose-600">
+                                  <svg data-like-icon viewBox="0 0 24 24" class="w-5 h-5"
+                                    fill="<%= likedByMe ? 'currentColor' : 'none' %>" stroke="currentColor"
+                                    stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                  </svg>
+                                  <span data-like-count>
+                                    <%= likeCount %>
+                                  </span>
                                 </button>
-                                <button type="button" data-carousel-next aria-label="Próxima foto"
-                                  class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm">
-                                  ›
-                                </button>
-                                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                  <% post.images.forEach((_, i)=> { %>
-                                    <button type="button" data-carousel-dot="<%= i %>"
-                                      aria-label="Ir para foto <%= i + 1 %>"
-                                      class="w-1.5 h-1.5 rounded-full <%= i === 0 ? 'bg-white' : 'bg-white/50' %>"></button>
-                                    <% }) %>
-                                </div>
-                              </div>
-                              <% } %>
-                                <% if (post.tags.length> 0) { %>
-                                  <div class="flex gap-2 mt-3 flex-wrap">
-                                    <% post.tags.forEach((tag)=> { %>
-                                      <span class="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5">#<%=
-                                          tag.name %>
-                                      </span>
-                                      <% }) %>
-                                  </div>
+                                <a href="/posts/<%= post.id %>" title="Comentários"
+                                  class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800">
+                                  <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor"
+                                    stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M8.625 9.75h6.75m-6.75 3h4.5M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25-9 3.694-9 8.25c0 1.6.497 3.096 1.356 4.36.1.148.14.33.107.507l-.713 3.133 3.94-1.02c.16-.042.33-.02.48.043 1.15.49 2.45.767 3.83.767Z" />
+                                  </svg>
+                                  <span>
+                                    <%= commentCount %>
+                                  </span>
+                                </a>
+                                <% if (post.authorId===currentUser.id) { %>
+                                  <form method="post" action="/posts/<%= post.id %>/delete" class="ml-auto">
+                                    <button type="submit"
+                                      class="text-xs text-red-600 hover:underline">Apagar</button>
+                                  </form>
                                   <% } %>
-                                    <footer class="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
-                                      <%# ATIVIDADE: este form ainda não tem rota no backend %>
-                                        <button type="button" data-like-button data-post-id="<%= post.id %>"
-                                          data-liked="<%= likedByMe %>" title="Curtir"
-                                          class="like-button flex items-center gap-1.5 text-sm <%= likedByMe ? 'text-rose-600' : 'text-slate-500' %> hover:text-rose-600">
-                                          <svg data-like-icon viewBox="0 0 24 24" class="w-5 h-5"
-                                            fill="<%= likedByMe ? 'currentColor' : 'none' %>" stroke="currentColor"
-                                            stroke-width="1.8">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                                          </svg>
-                                          <span data-like-count>
-                                            <%= likeCount %>
-                                          </span>
-                                        </button>
-                                        <a href="/posts/<%= post.id %>" title="Comentários"
-                                          class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800">
-                                          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor"
-                                            stroke-width="1.8">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M8.625 9.75h6.75m-6.75 3h4.5M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25-9 3.694-9 8.25c0 1.6.497 3.096 1.356 4.36.1.148.14.33.107.507l-.713 3.133 3.94-1.02c.16-.042.33-.02.48.043 1.15.49 2.45.767 3.83.767Z" />
-                                          </svg>
-                                          <span>
-                                            <%= commentCount %>
-                                          </span>
-                                        </a>
-                                        <% if (post.authorId===currentUser.id) { %>
-                                          <form method="post" action="/posts/<%= post.id %>/delete" class="ml-auto">
-                                            <button type="submit"
-                                              class="text-xs text-red-600 hover:underline">Apagar</button>
-                                          </form>
-                                          <% } %>
-                                    </footer>
+                              </footer>
                     </article>
                     <% }) %>
+          </div>
+
+          <p id="feed-loading" class="text-center text-xs text-slate-400 py-2 hidden">Carregando mais posts…</p>
+          <div id="feed-sentinel" data-page="<%= feed.page %>" data-limit="<%= feed.limit %>"
+            data-has-more="<%= feed.hasMore %>"></div>
     </section>
 
     <aside class="flex flex-col gap-3">
@@ -170,33 +170,183 @@
     </aside>
   </main>
 
-    <script>
-      function setCarouselIndex(carousel, index) {
-        const track = carousel.querySelector('.carousel-track');
-        const count = track.children.length;
-        const clamped = ((index % count) + count) % count; 
-        carousel.dataset.index = clamped;
-        track.style.transform = `translateX(-${clamped * 100}%)`;
-        carousel.querySelectorAll('[data-carousel-dot]').forEach((dot, i) => {
-          dot.classList.toggle('bg-white', i === clamped);
-          dot.classList.toggle('bg-white/50', i !== clamped);
+  <script>
+    function renderPost(post, currentUserId) {
+      const likeCount = post._count?.likes ?? 0;
+      const commentCount = post._count?.comments ?? 0;
+      const likedByMe = post.likedByMe ?? false;
+
+      const imageHtml = post.images.length === 1
+        ? `<img src="${post.images[0].url}" alt="" class="mt-3 rounded-lg max-h-80 w-full object-cover" />`
+        : '';
+
+      const carouselHtml = post.images.length > 1 ? `
+        <div class="carousel relative mt-3 rounded-lg overflow-hidden" data-carousel data-index="0">
+          <div class="carousel-track flex" style="transform: translateX(0%);">
+            ${post.images.map((img) => `<img src="${img.url}" alt="" class="w-full flex-shrink-0 max-h-80 object-cover" />`).join('')}
+          </div>
+          <button type="button" data-carousel-prev aria-label="Foto anterior" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm">‹</button>
+          <button type="button" data-carousel-next aria-label="Próxima foto" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm">›</button>
+          <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            ${post.images.map((_, i) => `<button type="button" data-carousel-dot="${i}" aria-label="Ir para foto ${i + 1}" class="w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/50'}"></button>`).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      const tagsHtml = post.tags.length > 0 ? `
+        <div class="flex gap-2 mt-3 flex-wrap">
+          ${post.tags.map((tag) => `<span class="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5">#${tag.name}</span>`).join('')}
+        </div>
+      ` : '';
+
+      const deleteHtml = post.authorId === currentUserId ? `
+        <form method="post" action="/posts/${post.id}/delete" class="ml-auto">
+          <button type="submit" class="text-xs text-red-600 hover:underline">Apagar</button>
+        </form>
+      ` : '';
+
+      return `
+        <article class="bg-white rounded-lg shadow p-4">
+          <header class="flex items-center justify-between">
+            <p class="text-sm font-medium text-slate-800">${post.author.name}</p>
+            <p class="text-xs text-slate-400">${new Date(post.createdAt).toLocaleString('pt-BR')}</p>
+          </header>
+          <a href="/posts/${post.id}" class="block group">
+            <p class="text-slate-700 mt-2 group-hover:text-slate-900">${post.content}</p>
+            ${imageHtml}
+          </a>
+          ${carouselHtml}
+          ${tagsHtml}
+          <footer class="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
+            <button type="button" data-like-button data-post-id="${post.id}" data-liked="${likedByMe}" title="Curtir"
+              class="like-button flex items-center gap-1.5 text-sm ${likedByMe ? 'text-rose-600' : 'text-slate-500'} hover:text-rose-600">
+              <svg data-like-icon viewBox="0 0 24 24" class="w-5 h-5" fill="${likedByMe ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+              </svg>
+              <span data-like-count>${likeCount}</span>
+            </button>
+            <a href="/posts/${post.id}" title="Comentários" class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800">
+              <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75h6.75m-6.75 3h4.5M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25-9 3.694-9 8.25c0 1.6.497 3.096 1.356 4.36.1.148.14.33.107.507l-.713 3.133 3.94-1.02c.16-.042.33-.02.48.043 1.15.49 2.45.767 3.83.767Z" />
+              </svg>
+              <span>${commentCount}</span>
+            </a>
+            ${deleteHtml}
+          </footer>
+        </article>
+      `;
+    }
+
+    document.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-like-button]');
+      if (!button) return;
+
+      const postId = button.dataset.postId;
+      const countEl = button.querySelector('[data-like-count]');
+      const iconEl = button.querySelector('[data-like-icon]');
+
+      button.disabled = true;
+      try {
+        const res = await fetch(`/posts/${postId}/like`, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
         });
+        if (!res.ok) throw new Error('Falha ao curtir');
+        const { liked, count } = await res.json();
+
+        button.dataset.liked = String(liked);
+        countEl.textContent = count;
+        button.classList.toggle('text-rose-600', liked);
+        button.classList.toggle('text-slate-500', !liked);
+        iconEl.setAttribute('fill', liked ? 'currentColor' : 'none');
+      } catch (err) {
+        console.error(err);
+      } finally {
+        button.disabled = false;
       }
+    });
 
-      document.addEventListener('click', (event) => {
-        const carousel = event.target.closest('[data-carousel]');
-        if (!carousel) return;
-
-        const current = Number(carousel.dataset.index);
-        if (event.target.closest('[data-carousel-prev]')) {
-          setCarouselIndex(carousel, current - 1);
-        } else if (event.target.closest('[data-carousel-next]')) {
-          setCarouselIndex(carousel, current + 1);
-        } else if (event.target.closest('[data-carousel-dot]')) {
-          const dot = event.target.closest('[data-carousel-dot]');
-          setCarouselIndex(carousel, Number(dot.dataset.carouselDot));
-        }
+    function setCarouselIndex(carousel, index) {
+      const track = carousel.querySelector('.carousel-track');
+      const count = track.children.length;
+      const clamped = ((index % count) + count) % count;
+      carousel.dataset.index = clamped;
+      track.style.transform = `translateX(-${clamped * 100}%)`;
+      carousel.querySelectorAll('[data-carousel-dot]').forEach((dot, i) => {
+        dot.classList.toggle('bg-white', i === clamped);
+        dot.classList.toggle('bg-white/50', i !== clamped);
       });
-    </script>
-  </body>
+    }
+
+    document.addEventListener('click', (event) => {
+      const carousel = event.target.closest('[data-carousel]');
+      if (!carousel) return;
+
+      const current = Number(carousel.dataset.index);
+      if (event.target.closest('[data-carousel-prev]')) {
+        setCarouselIndex(carousel, current - 1);
+      } else if (event.target.closest('[data-carousel-next]')) {
+        setCarouselIndex(carousel, current + 1);
+      } else if (event.target.closest('[data-carousel-dot]')) {
+        const dot = event.target.closest('[data-carousel-dot]');
+        setCarouselIndex(carousel, Number(dot.dataset.carouselDot));
+      }
+    });
+
+    const feedPosts = document.getElementById('feed-posts');
+    const feedSentinel = document.getElementById('feed-sentinel');
+    const feedLoading = document.getElementById('feed-loading');
+    const feedEmpty = document.getElementById('feed-empty');
+    const currentUserId = Number(feedPosts.dataset.currentUserId);
+
+    let isLoadingMore = false;
+
+    async function loadMorePosts() {
+      if (isLoadingMore || feedSentinel.dataset.hasMore !== 'true') return;
+
+      isLoadingMore = true;
+      feedLoading.classList.remove('hidden');
+      try {
+        const nextPage = Number(feedSentinel.dataset.page) + 1;
+        const limit = feedSentinel.dataset.limit;
+        const res = await fetch(`/api/feed?page=${nextPage}&limit=${limit}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) throw new Error('Falha ao carregar mais posts');
+        const data = await res.json();
+
+        data.posts.forEach((post) => {
+          feedPosts.insertAdjacentHTML('beforeend', renderPost(post, currentUserId));
+        });
+
+        if (feedEmpty && data.posts.length > 0) {
+          feedEmpty.remove();
+        }
+
+        feedSentinel.dataset.page = String(data.page);
+        feedSentinel.dataset.hasMore = String(data.hasMore);
+
+        if (!data.hasMore) {
+          observer.disconnect();
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        isLoadingMore = false;
+        feedLoading.classList.add('hidden');
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMorePosts();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(feedSentinel);
+  </script>
+</body>
+
 </html>

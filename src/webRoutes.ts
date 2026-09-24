@@ -104,6 +104,22 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
     }),
   );
 
+  router.get(
+    '/api/feed',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const page = Number(req.query.page);
+      const limit = Number(req.query.limit);
+      const feed = await userController.feed(
+        req.session.userId!,
+        Number.isInteger(page) ? page : 0,
+        Number.isInteger(limit) ? limit : 10,
+      );
+      res.json(feed);
+    }),
+  );
+
+
   router.get('/posts/new', requireAuth, (req, res) => {
     res.render('newPost', { error: null });
   });

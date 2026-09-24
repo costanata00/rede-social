@@ -58,28 +58,43 @@ export class UserController {
   // Feed = posts de quem eu sigo. Mostra um filtro relacional aninhado:
   // "posts cujo autor tem, entre seus seguidores, um Follow onde eu sou o
   // follower" — sem precisar buscar a lista de ids manualmente antes.
-
-  async feed(userId: number) {
+  async feed(userId: number, page = 0, limit = 10) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new UserNotFoundError(userId);
     }
-    const posts = await this.prisma.post.findMany({
-      where: { OR: [{ author: { followers: { some: { followerId: userId } } } }, { authorId: userId },], },
-      include: {
-        author: true,
-        tags: true,
-        images: { orderBy: { order: 'asc' } },
-        // incluir likes e comentários
-        _count: { select: { likes: true, comments: true } },
-        likes: { where: { userId }, select: { userId: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return posts.map(({ likes, ...post }) => ({ ...post, likedByMe: likes.length > 0 }));
+    // Valida e aplica valores padrão à paginação (página atual e limite por página, máx. 50)
+    const currentPage = Number.isInteger(page) && page >= 0 ? page : 0;
+    const pageSize = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 50) : 10;
+    const where = {
+      OR: [
+        { author: { followers: { some: { followerId: userId } } } },
+        { authorId: userId },
+      ],
+    };
+    const [posts, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        skip: currentPage * pageSize,
+        take: pageSize,
+        include: {
+          author: true,
+          tags: true,
+          images: { orderBy: { order: 'asc' } },
+          _count: { select: { likes: true, comments: true } },
+          likes: { where: { userId }, select: { userId: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.post.count({ where }),
+    ]);
+    return {
+      posts: posts.map(({ likes, ...post }) => ({ ...post, likedByMe: likes.length > 0 })),
+      page: currentPage,
+      limit: pageSize,
+      hasMore: (currentPage + 1) * pageSize < total,
+    };
   }
-
-
 
 
   // Lista para a tela inicial sugerir quem seguir: todo mundo, exceto eu
