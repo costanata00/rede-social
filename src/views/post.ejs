@@ -175,6 +175,19 @@
                 const countEl = likeButton.querySelector('[data-like-count]');
                 const iconEl = likeButton.querySelector('[data-like-icon]');
 
+
+                //7
+                const wasLiked = likeButton.dataset.liked === 'true';
+                const previousCount = Number(countEl.textContent);
+                const optimisticLiked = !wasLiked;
+                const optimisticCount = previousCount + (optimisticLiked ? 1 : -1);
+
+                likeButton.dataset.liked = String(optimisticLiked);
+                countEl.textContent = optimisticCount;
+                likeButton.classList.toggle('text-rose-600', optimisticLiked);
+                likeButton.classList.toggle('text-slate-500', !optimisticLiked);
+                iconEl.setAttribute('fill', optimisticLiked ? 'currentColor' : 'none');
+
                 likeButton.disabled = true;
                 try {
                   const res = await fetch(`/posts/${postId}/like`, {
@@ -191,6 +204,11 @@
                   iconEl.setAttribute('fill', liked ? 'currentColor' : 'none');
                 } catch (err) {
                   console.error(err);
+                  likeButton.dataset.liked = String(wasLiked);
+                  countEl.textContent = previousCount;
+                  likeButton.classList.toggle('text-rose-600', wasLiked);
+                  likeButton.classList.toggle('text-slate-500', !wasLiked);
+                  iconEl.setAttribute('fill', wasLiked ? 'currentColor' : 'none');
                 } finally {
                   likeButton.disabled = false;
                 }
@@ -202,6 +220,19 @@
                 const countEl = commentLikeButton.querySelector('[data-comment-like-count]');
                 const iconEl = commentLikeButton.querySelector('[data-comment-like-icon]');
                 const postId = commentLikeButton.closest('[data-post-id]').dataset.postId;
+
+
+                //7
+                const wasLiked = commentLikeButton.dataset.liked === 'true';
+                const previousCount = Number(countEl.textContent);
+                const optimisticLiked = !wasLiked;
+                const optimisticCount = previousCount + (optimisticLiked ? 1 : -1);
+
+                commentLikeButton.dataset.liked = String(optimisticLiked);
+                countEl.textContent = optimisticCount;
+                commentLikeButton.classList.toggle('text-rose-600', optimisticLiked);
+                commentLikeButton.classList.toggle('text-slate-400', !optimisticLiked);
+                iconEl.setAttribute('fill', optimisticLiked ? 'currentColor' : 'none');
 
                 commentLikeButton.disabled = true;
                 try {
@@ -219,6 +250,11 @@
                   iconEl.setAttribute('fill', liked ? 'currentColor' : 'none');
                 } catch (err) {
                   console.error(err);
+                  commentLikeButton.dataset.liked = String(wasLiked);
+                  countEl.textContent = previousCount;
+                  commentLikeButton.classList.toggle('text-rose-600', wasLiked);
+                  commentLikeButton.classList.toggle('text-slate-400', !wasLiked);
+                  iconEl.setAttribute('fill', wasLiked ? 'currentColor' : 'none');
                 } finally {
                   commentLikeButton.disabled = false;
                 }

@@ -245,6 +245,18 @@
       const countEl = button.querySelector('[data-like-count]');
       const iconEl = button.querySelector('[data-like-icon]');
 
+      //7
+      const wasLiked = button.dataset.liked === 'true';
+      const previousCount = Number(countEl.textContent);
+      const optimisticLiked = !wasLiked;
+      const optimisticCount = previousCount + (optimisticLiked ? 1 : -1);
+
+      button.dataset.liked = String(optimisticLiked);
+      countEl.textContent = optimisticCount;
+      button.classList.toggle('text-rose-600', optimisticLiked);
+      button.classList.toggle('text-slate-500', !optimisticLiked);
+      iconEl.setAttribute('fill', optimisticLiked ? 'currentColor' : 'none');
+
       button.disabled = true;
       try {
         const res = await fetch(`/posts/${postId}/like`, {
@@ -261,6 +273,11 @@
         iconEl.setAttribute('fill', liked ? 'currentColor' : 'none');
       } catch (err) {
         console.error(err);
+        button.dataset.liked = String(wasLiked);
+        countEl.textContent = previousCount;
+        button.classList.toggle('text-rose-600', wasLiked);
+        button.classList.toggle('text-slate-500', !wasLiked);
+        iconEl.setAttribute('fill', wasLiked ? 'currentColor' : 'none');
       } finally {
         button.disabled = false;
       }
