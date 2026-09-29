@@ -63,7 +63,6 @@ export class UserController {
     if (!user) {
       throw new UserNotFoundError(userId);
     }
-    // Valida e aplica valores padrão à paginação (página atual e limite por página, máx. 50)
     const currentPage = Number.isInteger(page) && page >= 0 ? page : 0;
     const pageSize = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 50) : 10;
     const where = {

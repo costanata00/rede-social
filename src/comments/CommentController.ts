@@ -51,6 +51,19 @@ export class CommentController {
     const count = await this.prisma.commentLike.count({ where: { commentId } });
     return { liked: !existing, count };
   }
+  async update(id: number, body: unknown) {
+    const { content } = (body ?? {}) as { content?: unknown };
+
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      throw new ValidationError('"content" é obrigatório');
+    }
+
+    return this.prisma.comment.update({
+      where: { id },
+      data: { content },
+      include: { author: true },
+    });
+  }
 }
 
 

@@ -124,7 +124,7 @@
                       <p class="text-sm text-slate-500 py-3">Nenhum comentário ainda. Seja o primeiro.</p>
                       <% } %>
                         <% comments.forEach((comment)=> { %>
-                          <div class="py-3">
+                          <div class="py-3" data-comment-id="<%= comment.id %>">
                             <div class="flex items-center justify-between">
                               <p class="text-sm font-medium text-slate-800">
                                 <%= comment.author.name %>
@@ -133,7 +133,7 @@
                                 <%= new Date(comment.createdAt).toLocaleString('pt-BR') %>
                               </p>
                             </div>
-                            <p class="text-sm text-slate-700 mt-1">
+                            <p class="text-sm text-slate-700 mt-1" data-comment-content>
                               <%= comment.content %>
                             </p>
                             <div class="flex items-center gap-3 mt-1.5">
@@ -151,6 +151,10 @@
                                 </span>
                               </button>
                               <% if (comment.authorId===currentUser.id) { %>
+                                <button type="button" data-edit-comment-button
+                                  class="text-xs text-slate-500 hover:underline">
+                                  Editar
+                                </button>
                                 <form method="post" action="/posts/<%= post.id %>/comments/<%= comment.id %>/delete">
                                   <button type="submit" class="text-xs text-red-600 hover:underline">Apagar</button>
                                 </form>
@@ -247,6 +251,88 @@
                 setCarouselIndex(carousel, Number(dot.dataset.carouselDot));
               }
             });
+
+            document.addEventListener('click', (event) => {
+              const editButton = event.target.closest('[data-edit-comment-button]');
+              if (!editButton) return;
+
+              const commentEl = editButton.closest('[data-comment-id]');
+              const contentEl = commentEl.querySelector('[data-comment-content]');
+              const commentId = commentEl.dataset.commentId;
+              const postId = commentEl.closest('[data-post-id]').dataset.postId;
+              const originalContent = contentEl.textContent.trim();
+
+              const textarea = document.createElement('textarea');
+              textarea.value = originalContent;
+              textarea.rows = 2;
+              textarea.className = 'w-full border rounded px-2 py-1 text-sm mt-1';
+
+              const saveButton = document.createElement('button');
+              saveButton.type = 'button';
+              saveButton.textContent = 'Salvar';
+              saveButton.className = 'text-xs bg-slate-800 text-white rounded px-2 py-1 hover:bg-slate-700 mt-1 mr-2';
+
+              const cancelButton = document.createElement('button');
+              cancelButton.type = 'button';
+              cancelButton.textContent = 'Cancelar';
+              cancelButton.className = 'text-xs text-slate-500 hover:underline mt-1';
+
+              const errorEl = document.createElement('p');
+              errorEl.className = 'text-xs text-red-600 mt-1 hidden';
+
+              const actionsRow = document.createElement('div');
+              actionsRow.className = 'mt-1';
+              actionsRow.append(saveButton, cancelButton);
+
+              contentEl.replaceWith(textarea, actionsRow, errorEl);
+              textarea.focus();
+
+              cancelButton.addEventListener('click', () => {
+                textarea.remove();
+                actionsRow.remove();
+                errorEl.remove();
+                commentEl.querySelector('.flex.items-center.gap-3').insertAdjacentElement('beforebegin', contentEl);
+              });
+
+              saveButton.addEventListener('click', async () => {
+                const newContent = textarea.value.trim();
+                errorEl.classList.add('hidden');
+
+                if (!newContent) {
+                  errorEl.textContent = '"content" é obrigatório';
+                  errorEl.classList.remove('hidden');
+                  return;
+                }
+
+                saveButton.disabled = true;
+                try {
+                  const res = await fetch(`/posts/${postId}/comments/${commentId}/edit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify({ content: newContent }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    errorEl.textContent = data.error ?? 'Falha ao editar comentário';
+                    errorEl.classList.remove('hidden');
+                    return;
+                  }
+
+                  contentEl.textContent = data.content;
+                  textarea.remove();
+                  actionsRow.remove();
+                  errorEl.remove();
+                  commentEl.querySelector('.flex.items-center.gap-3').insertAdjacentElement('beforebegin', contentEl);
+                } catch (err) {
+                  console.error(err);
+                  errorEl.textContent = 'Falha ao editar comentário';
+                  errorEl.classList.remove('hidden');
+                } finally {
+                  saveButton.disabled = false;
+                }
+              });
+            });
+
 
 
           </script>

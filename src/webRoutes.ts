@@ -24,7 +24,7 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
   const likeController = new LikeController(prisma);
   const commentController = new CommentController(prisma);
 
-  
+
 
 
 
@@ -235,6 +235,25 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
       res.json(result);
     }),
   );
+  
+  router.post(
+    '/posts/:postId/comments/:commentId/edit',
+    requireAuth,
+    requireOwnComment(prisma),
+    asyncHandler(async (req, res) => {
+      try {
+        const comment = await commentController.update(Number(req.params.commentId), req.body);
+        res.json({ content: comment.content });
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          res.status(400).json({ error: err.message });
+          return;
+        }
+        throw err;
+      }
+    }),
+  );
+
 
 
   return router;
