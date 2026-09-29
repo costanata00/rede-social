@@ -30,6 +30,7 @@ model User {
   comments Comment[]
   commentLikes CommentLike[]
 
+  lastSeenAt   DateTime @default(now())
 }
 
 model Follow {

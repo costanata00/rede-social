@@ -22,6 +22,11 @@
               </strong>
               (<%= currentUser._count.following %> seguindo, <%= currentUser._count.followers %> seguidores)
             </p>
+            <% if (notificacaoCount> 0) { %>
+              <p class="text-xs text-amber-300 mt-0.5">
+                <%= notificacaoCount %> notificacoes desde sua última visita
+              </p>
+              <% } %>
           </div>
     </div>
     <div class="flex items-center gap-3">
@@ -38,7 +43,7 @@
     <section class="md:col-span-2 flex flex-col gap-4">
       <h2 class="text-slate-500 text-sm font-medium uppercase tracking-wide">Seu feed</h2>
 
-      <% if (feed.posts.length === 0) { %>
+      <% if (feed.posts.length===0) { %>
         <p id="feed-empty" class="bg-white rounded-lg shadow p-6 text-sm text-slate-500">
           Ninguém que você segue postou ainda. Siga alguém na coluna ao lado.
         </p>
@@ -73,8 +78,7 @@
                         <div class="carousel relative mt-3 rounded-lg overflow-hidden" data-carousel data-index="0">
                           <div class="carousel-track flex" style="transform: translateX(0%);">
                             <% post.images.forEach((image)=> { %>
-                              <img src="<%= image.url %>" alt=""
-                                class="w-full flex-shrink-0 max-h-80 object-cover" />
+                              <img src="<%= image.url %>" alt="" class="w-full flex-shrink-0 max-h-80 object-cover" />
                               <% }) %>
                           </div>
                           <button type="button" data-carousel-prev aria-label="Foto anterior"
@@ -87,8 +91,7 @@
                           </button>
                           <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
                             <% post.images.forEach((_, i)=> { %>
-                              <button type="button" data-carousel-dot="<%= i %>"
-                                aria-label="Ir para foto <%= i + 1 %>"
+                              <button type="button" data-carousel-dot="<%= i %>" aria-label="Ir para foto <%= i + 1 %>"
                                 class="w-1.5 h-1.5 rounded-full <%= i === 0 ? 'bg-white' : 'bg-white/50' %>"></button>
                               <% }) %>
                           </div>
@@ -98,8 +101,8 @@
                           <% if (post.tags.length> 0) { %>
                             <div class="flex gap-2 mt-3 flex-wrap">
                               <% post.tags.forEach((tag)=> { %>
-                                <span class="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5">#<%=
-                                    tag.name %>
+                                <span class="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5">#<%= tag.name
+                                    %>
                                 </span>
                                 <% }) %>
                             </div>
@@ -132,8 +135,7 @@
                                 </a>
                                 <% if (post.authorId===currentUser.id) { %>
                                   <form method="post" action="/posts/<%= post.id %>/delete" class="ml-auto">
-                                    <button type="submit"
-                                      class="text-xs text-red-600 hover:underline">Apagar</button>
+                                    <button type="submit" class="text-xs text-red-600 hover:underline">Apagar</button>
                                   </form>
                                   <% } %>
                               </footer>

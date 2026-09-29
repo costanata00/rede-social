@@ -95,12 +95,14 @@ export function createWebRoutes(prisma: PrismaClient, imageStorage: ImageStorage
     requireAuth,
     asyncHandler(async (req, res) => {
       const currentUserId = req.session.userId!;
-      const [currentUser, feed, others] = await Promise.all([
+      const [currentUser, feed, others, notificacaoCount] = await Promise.all([
         userController.get(currentUserId),
         userController.feed(currentUserId),
         userController.listOthers(currentUserId),
+        userController.consumeNotificacoes(currentUserId),
+
       ]);
-      res.render('feed', { currentUser, feed, others });
+      res.render('feed', { currentUser, feed, others, notificacaoCount });
     }),
   );
 

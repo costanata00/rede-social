@@ -109,4 +109,35 @@ export class UserController {
 
     return users.map((user) => ({ ...user, isFollowing: followingIds.has(user.id) }));
   }
+  async consumeNotificacoes(userId: number): Promise<number> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UserNotFoundError(userId);
+    }
+
+    const since = user.lastSeenAt;
+
+    const [newLikes, newComments] = await Promise.all([
+      this.prisma.like.count({
+        where: {
+          post: { authorId: userId },
+          createdAt: { gt: since },
+          userId: { not: userId },
+        },
+      }),
+      this.prisma.comment.count({
+        where: {
+          post: { authorId: userId },
+          createdAt: { gt: since },
+          authorId: { not: userId },
+        },
+      }),
+    ]);
+
+    await this.prisma.user.update({ where: { id: userId }, data: { lastSeenAt: new Date() } });
+
+    return newLikes + newComments;
+  }
+
+
 }
