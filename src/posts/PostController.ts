@@ -62,7 +62,10 @@ export class PostController {
               ? { likes: { where: { userId: currentUserId }, select: { userId: true } } }
               : {}),
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: [
+            { likes: { _count: 'desc' } },
+            { createdAt: 'desc' },
+          ],
         },
 
         _count: { select: { likes: true, comments: true } },
