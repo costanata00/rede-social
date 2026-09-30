@@ -45,14 +45,18 @@ describe('POST /posts (autenticado)', () => {
     const res = await agent
       .post('/posts')
       .field('content', 'Post com foto')
-      .attach('image', Buffer.from('fake-image-bytes'), { filename: 'foto.png', contentType: 'image/png' });
+      .attach('images', Buffer.from('fake-image-bytes'), { filename: 'foto.png', contentType: 'image/png' });
 
     expect(res.status).toBe(302);
     expect(imageStorage.uploads).toHaveLength(1);
     expect(imageStorage.uploads[0].originalname).toBe('foto.png');
 
-    const post = await prisma.post.findFirstOrThrow({ where: { content: 'Post com foto' } });
-    expect(post.imageUrl).toBe('https://fake-bucket.test/foto.png');
+    const post = await prisma.post.findFirstOrThrow({
+      where: { content: 'Post com foto' },
+      include: { images: true },
+    });
+    expect(post.images).toHaveLength(1);
+    expect(post.images[0].url).toBe('https://fake-bucket.test/foto.png');
   });
 
   it('rejeita um arquivo que não é imagem (fileFilter do Multer)', async () => {
@@ -61,7 +65,7 @@ describe('POST /posts (autenticado)', () => {
     const res = await agent
       .post('/posts')
       .field('content', 'Post com anexo inválido')
-      .attach('image', Buffer.from('não é imagem'), { filename: 'arquivo.txt', contentType: 'text/plain' });
+      .attach('images', Buffer.from('não é imagem'), { filename: 'arquivo.txt', contentType: 'text/plain' });
 
     expect(res.status).toBe(500);
     expect(imageStorage.uploads).toHaveLength(0);
