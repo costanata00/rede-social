@@ -102,6 +102,42 @@ describe('GET /api/users/:id/feed', () => {
   });
 });
 
+describe('GET /api/feed (paginação)', () => {
+  it('retorna páginas ordenadas e informa se ainda há posts', async () => {
+    const ana = await registerAndLogin(app, prisma, 'ana@exemplo.com', 'Ana');
+    const baseDate = new Date('2026-01-01T00:00:00.000Z');
+    await Promise.all(['Post antigo', 'Post do meio', 'Post recente'].map((content, index) =>
+      prisma.post.create({
+        data: {
+          content,
+          authorId: ana.userId,
+          createdAt: new Date(baseDate.getTime() + index * 60_000),
+        },
+      }),
+    ));
+
+    const firstPage = await ana.agent.get('/api/feed?page=0&limit=2');
+    const secondPage = await ana.agent.get('/api/feed?page=1&limit=2');
+
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body).toMatchObject({ page: 0, limit: 2, hasMore: true });
+    expect(firstPage.body.posts.map((post: { content: string }) => post.content)).toEqual([
+      'Post recente',
+      'Post do meio',
+    ]);
+    expect(secondPage.status).toBe(200);
+    expect(secondPage.body).toMatchObject({ page: 1, limit: 2, hasMore: false });
+    expect(secondPage.body.posts.map((post: { content: string }) => post.content)).toEqual(['Post antigo']);
+  });
+
+  it('redireciona para login quem não está autenticado', async () => {
+    const response = await request(app).get('/api/feed?page=0&limit=2');
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe('/login');
+  });
+});
+
 describe('GET / — feed renderizado + sugestões de quem seguir', () => {
   it('lista outros usuários com isFollowing correto', async () => {
     const ana = await registerAndLogin(app, prisma, 'ana@exemplo.com', 'Ana');

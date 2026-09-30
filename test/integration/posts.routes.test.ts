@@ -59,6 +59,27 @@ describe('POST /posts (autenticado)', () => {
     expect(post.images[0].url).toBe('https://fake-bucket.test/foto.png');
   });
 
+  it('faz upload de múltiplas imagens e preserva a ordem no post', async () => {
+    const { agent } = await registerAndLogin(app, prisma, 'ana@exemplo.com');
+
+    const res = await agent
+      .post('/posts')
+      .field('content', 'Post com várias fotos')
+      .attach('images', Buffer.from('primeira-imagem'), { filename: 'primeira.png', contentType: 'image/png' })
+      .attach('images', Buffer.from('segunda-imagem'), { filename: 'segunda.jpg', contentType: 'image/jpeg' });
+
+    expect(res.status).toBe(302);
+    expect(imageStorage.uploads.map((file) => file.originalname)).toEqual(['primeira.png', 'segunda.jpg']);
+    const post = await prisma.post.findFirstOrThrow({
+      where: { content: 'Post com várias fotos' },
+      include: { images: { orderBy: { order: 'asc' } } },
+    });
+    expect(post.images.map((image) => image.url)).toEqual([
+      'https://fake-bucket.test/primeira.png',
+      'https://fake-bucket.test/segunda.jpg',
+    ]);
+  });
+
   it('rejeita um arquivo que não é imagem (fileFilter do Multer)', async () => {
     const { agent } = await registerAndLogin(app, prisma, 'ana@exemplo.com');
 
